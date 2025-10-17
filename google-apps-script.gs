@@ -11,7 +11,7 @@ function doPost(e) {
   try {
     // !!! 중요: 이 ID를 자신의 구글 시트 ID로 변경하세요.
     // 시트 URL에서 확인할 수 있습니다: https://docs.google.com/spreadsheets/d/THIS_IS_THE_ID/edit
-    const SPREADSHEET_ID = "https://docs.google.com/spreadsheets/d/1QwvR8RfEvEolsO9Ty6evxQhQV39UtslTVipG54FegjY";
+    const SPREADSHEET_ID = "https://docs.google.com/spreadsheets/d/1QwvR8RfEvEolsO9Ty6evxQhQV39UtslTVipG54FegjY/edit";
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheets()[0];
 
     // 헤더가 없으면 생성
@@ -48,7 +48,7 @@ function doPost(e) {
 function doGet(e) {
   try {
     // !!! 중요: 이 ID를 자신의 구글 시트 ID로 변경하세요.
-    const SPREADSHEET_ID = "YOUR_SPREADSHEET_ID_HERE";
+    const SPREADSHEET_ID = "https://docs.google.com/spreadsheets/d/1QwvR8RfEvEolsO9Ty6evxQhQV39UtslTVipG54FegjY/edit";
     const sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheets()[0];
 
     if (sheet.getLastRow() < 2) {
