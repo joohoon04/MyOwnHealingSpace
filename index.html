@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<meta name="robots" content="noindex">
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>나만의 휴식 공간 공유 설문</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
+
+:root {
+    --primary-color: #4CAF50; /* Green - 휴식/힐링 테마 */
+    --secondary-color: #81C784; /* Light Green */
+    --background-color: #F1F8E9; /* Very Light Green */
+    --card-background: #FFFFFF;
+    --text-color: #424242;
+    --border-color: #E0E0E0;
+    --shadow-color: rgba(0, 0, 0, 0.1);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+header h1 {
+    color: var(--primary-color);
+    margin-bottom: 10px;
+}
+
+#record-form {
+    background-color: var(--card-background);
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px var(--shadow-color);
+    margin-bottom: 40px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+input[type="text"], input[type="date"], select, textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: 'Noto Sans KR', sans-serif;
+}
+
+textarea {
+    resize: vertical;
+}
+
+/* 라디오/체크박스 스타일링 */
+.choice-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.choice-selector input[type="radio"], .choice-selector input[type="checkbox"] {
+    display: none;
+}
+
+.choice-selector label {
+    padding: 10px 15px;
+    border: 1px solid var(--primary-color);
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background-color: #fff;
+    color: var(--text-color);
+}
+
+.choice-selector input[type="radio"]:checked + label,
+.choice-selector input[type="checkbox"]:checked + label {
+    background-color: var(--primary-color);
+    color: var(--card-background);
+    border-color: var(--primary-color);
+    font-weight: 700;
+    box-shadow: 0 2px 5px rgba(76, 175, 80, 0.5);
+}
+
+button[type="submit"] {
+    width: 100%;
+    padding: 15px;
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button[type="submit"]:hover {
+    background-color: #66BB6A;
+}
+
+.chart-container {
+    max-width: 100%;
+    margin-bottom: 30px;
+}
+
+.stats-section {
+    background-color: var(--card-background);
+    padding: 20px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px var(--shadow-color);
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+.stats-section h3 {
+    margin-bottom: 15px;
+    color: var(--primary-color);
+}
+
+/* 기록 목록 스타일은 기존 코드를 재활용하며 컬럼만 수정 */
+.records-header, .record-row {
+    display: grid;
+    /* 항목에 맞게 컬럼 비율 조정 */
+    grid-template-columns: 120px 100px 1fr 100px 80px 150px; 
+    gap: 10px;
+    padding: 15px 10px;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.records-header {
+    font-weight: 700;
+    background-color: #e8f5e9;
+    color: var(--text-color);
+    border-bottom: 2px solid var(--primary-color);
+}
+
+.record-content, .record-detail {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.record-satisfaction, .record-mood {
+    text-align: center;
+}
+
+footer {
+    text-align: center;
+    margin-top: 40px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    color: #757575;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .records-header {
+        display: none;
+    }
+
+    .records-list-container {
+        background-color: transparent;
+        box-shadow: none;
+    }
+
+    .record-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-bottom: 15px;
+        border-radius: 12px;
+        border: 1px solid var(--border-color);
+        box-shadow: 0 4px 15px var(--shadow-color);
+        background-color: var(--card-background);
+        padding: 20px;
+    }
+
+    .record-row > div::before {
+        font-weight: 700;
+        margin-right: 10px;
+        color: var(--primary-color);
+    }
+    
+    /* 모바일 레이블 수정 */
+    .record-location::before { content: '공간: '; }
+    .record-outdoor::before { content: '야외: '; }
+    .record-activity::before { content: '활동: '; }
+    .record-time::before { content: '시간대: '; }
+    .record-mood::before { content: '기분(전): '; }
+    .record-satisfaction::before { content: '만족도: '; }
+    .record-important::before { content: '중요 요소: '; }
+    .record-recommend::before { content: '추천 대상: '; }
+    .record-memory::before { content: '특별한 기억: '; }
+    
+    .record-activity, .record-memory {
+        white-space: normal;
+        overflow: visible;
+        text-overflow: initial;
+    }
+
+    .record-time, .record-satisfaction, .record-mood {
+        text-align: left;
+    }
+}
+</style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>나만의 휴식 공간 공유 🌿</h1>
+            <p>당신의 힐링 공간에 대해 이야기해주세요.</p>
+        </header>
+        <main>
+            <form id="record-form">
+                
+                <div class="form-group">
+                    <label for="location">1. 당신이 휴식을 취하는 공간(또는 장소)은 어디인가요?</label>
+                    <input type="text" id="location" name="location" placeholder="예: 집 거실 소파, 서재, 동네 카페 등" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>2. 휴식을 위해 야외로 나간다면 주로 어디를 방문하시나요?</label>
+                    <div class="choice-selector">
+                        <input type="radio" id="outdoor-cafe" name="outdoor" value="카페" required>
+                        <label for="outdoor-cafe">☕ 카페</label>
+                        <input type="radio" id="outdoor-park" name="outdoor" value="공원">
+                        <label for="outdoor-park">🌳 공원</label>
+                        <input type="radio" id="outdoor-library" name="outdoor" value="도서관">
+                        <label for="outdoor-library">📚 도서관</label>
+                        <input type="radio" id="outdoor-karaoke" name="outdoor" value="노래방">
+                        <label for="outdoor-karaoke">🎤 노래방</label>
+                        <input type="radio" id="outdoor-etc" name="outdoor" value="기타">
+                        <label for="outdoor-etc">✨ 기타</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>3. 휴식 공간에서 무엇을 하면서 휴식을 취하나요? (다중 선택 가능)</label>
+                    <div class="choice-selector" id="activity-selector">
+                        <input type="checkbox" id="activity-read" name="activity" value="독서 및 글쓰기">
+                        <label for="activity-read">📖 독서 및 글쓰기</label>
+                        <input type="checkbox" id="activity-music" name="activity" value="음악 감상">
+                        <label for="activity-music">🎧 음악 감상</label>
+                        <input type="checkbox" id="activity-movie" name="activity" value="영화/드라마 시청">
+                        <label for="activity-movie">🎬 영화/드라마 시청</label>
+                        <input type="checkbox" id="activity-sleep" name="activity" value="수면/낮잠">
+                        <label for="activity-sleep">😴 수면/낮잠</label>
+                        <input type="checkbox" id="activity-meditate" name="activity" value="명상">
+                        <label for="activity-meditate">🧘 명상</label>
+                        <input type="checkbox" id="activity-hobby" name="activity" value="취미 활동">
+                        <label for="activity-hobby">🎨 취미 활동</label>
+                        <input type="checkbox" id="activity-nothing" name="activity" value="아무것도 안하기(멍 때리기)">
+                        <label for="activity-nothing">💭 아무것도 안하기(멍 때리기)</label>
+                        <input type="checkbox" id="activity-etc" name="activity" value="기타">
+                        <label for="activity-etc">💬 기타</label>
+                    </div>
+                    <textarea id="activity-etc-detail" name="activity_etc" rows="1" placeholder="기타 선택 시 구체적인 활동을 적어주세요. (선택 사항)"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>4. 공간에서 어느 정도 휴식 시간을 가지고 있나요?</label>
+                    <div class="choice-selector">
+                        <input type="radio" id="time-30min" name="time" value="30분 이하" required>
+                        <label for="time-30min">1. 30분 이하</label>
+                        <input type="radio" id="time-1to2hr" name="time" value="1~2시간">
+                        <label for="time-1to2hr">2. 1~2시간</label>
+                        <input type="radio" id="time-6hr" name="time" value="6시간 이상">
+                        <label for="time-6hr">3. 6시간 이상</label>
+                        <input type="radio" id="time-etc" name="time" value="기타">
+                        <label for="time-etc">4. 기타</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="mood">5. 그 공간에 들어가기 전에 당신의 기분을 알려주세요</label>
+                    <input type="text" id="mood" name="mood" placeholder="예: 피곤함, 스트레스, 기대감" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>6. 당신의 공간 만족도</label>
+                    <div class="choice-selector">
+                        <input type="radio" id="satisfaction-verygood" name="satisfaction" value="매우 좋음" required>
+                        <label for="satisfaction-verygood">1. 매우 좋음</label>
+                        <input type="radio" id="satisfaction-good" name="satisfaction" value="좋음">
+                        <label for="satisfaction-good">2. 좋음</label>
+                        <input type="radio" id="satisfaction-normal" name="satisfaction" value="보통">
+                        <label for="satisfaction-normal">3. 보통</label>
+                        <input type="radio" id="satisfaction-bad" name="satisfaction" value="별로">
+                        <label for="satisfaction-bad">4. 별로</label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="important">7. 공간을 선정할 때 중요하게 생각하는 것은? (분위기, 온도, 소리, 조명, 사람의 유무, 시각적 요소 등)</label>
+                    <input type="text" id="important" name="important" placeholder="예: 은은한 조명과 잔잔한 음악이 중요해요." required>
+                </div>
+
+                <div class="form-group">
+                    <label for="recommend">8. 당신의 공간을 다른 사람에게 추천한다면, 어떤 상황의 사람에게 가장 어울릴까요?</label>
+                    <textarea id="recommend" name="recommend" rows="2" placeholder="예: 마음이 지친 사람, 집중해서 독서하고 싶은 사람"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="memory">9. 그 공간에서의 특별한 기억이나 감정이 있다면 자유롭게 적어주세요.</label>
+                    <textarea id="memory" name="memory" rows="4" placeholder="자유롭게 기록"></textarea>
+                </div>
+
+                <button type="submit">나의 휴식 공간 기록</button>
+            </form>
+
+            <section class="stats-section">
+                <h3>휴식 공간 통계 분석 📊</h3>
+                
+                <div class="chart-container">
+                    <h4>가장 선호하는 활동 (막대 그래프)</h4>
+                    <canvas id="activity-chart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h4>평균 휴식 시간대 비율 (파이 차트)</h4>
+                    <canvas id="time-chart"></canvas>
+                </div>
+            </section>
+
+            <section class="records-section">
+                <div class="section-header">
+                    <h2>우리의 휴식 기록들</h2>
+                    <button id="export-excel">엑셀로 내보내기</button>
+                </div>
+                <div class="records-list-container">
+                    <div class="records-header">
+                        <div>휴식 공간</div>
+                        <div>야외 선호</div>
+                        <div>주요 활동 (다중)</div>
+                        <div>시간대</div>
+                        <div>기분(전)</div>
+                        <div>만족도 / 중요 요소</div>
+                    </div>
+                    <div id="records-container">
+                        </div>
+                </div>
+            </section>
+        </main>
+        <footer>
+            <p>&copy; 2025 나만의 휴식 공간 공유. All rights reserved.</p>
+        </footer>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // !!! 중요: 배포된 자신의 Google Apps Script 웹 앱 URL로 변경하세요.
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwPV62ZVt6TSRWCIo-BzWEKKbT_OIDB4PZ82dbCELB-JRDpqJ-VapcaVBxFmzm_AOch/exec'; 
+
+    const recordForm = document.getElementById('record-form');
+    const recordsContainer = document.getElementById('records-container');
+    const exportButton = document.getElementById('export-excel');
+    const activityChartCanvas = document.getElementById('activity-chart');
+    const timeChartCanvas = document.getElementById('time-chart');
+    
+    let recordsCache = []; // 데이터 캐싱
+    let activityChart;
+    let timeChart;
+    
+    // 이모지 매핑
+    const satisfactionEmojis = { '매우 좋음': '🤩', '좋음': '😊', '보통': '😐', '별로': '😞' };
+    const timeColors = ['#FFA07A', '#6495ED', '#90EE90', '#D3D3D3']; // 30분, 1~2시간, 6시간 이상, 기타
+
+    // 데이터 로드 및 화면 업데이트
+    const loadRecords = async () => {
+        try {
+            const response = await fetch(WEB_APP_URL, { method: 'GET', redirect: 'follow' });
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            
+            recordsCache = await response.json();
+            if (!Array.isArray(recordsCache)) {
+                console.error("Error data received from Google Apps Script:", recordsCache);
+                throw new Error('Google Apps Script에서 에러가 발생했습니다.');
+            }
+            
+            recordsContainer.innerHTML = ''; 
+            // 최신순으로 정렬 (Timestamp 필드가 있다고 가정)
+            recordsCache.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
+            
+            recordsCache.forEach(addRecordToDOM);
+            renderCharts();
+
+        } catch (error) {
+            console.error('Error loading records:', error);
+            recordsContainer.innerHTML = `<p style="color: red;">데이터를 불러오는 데 실패했습니다. 설정을 확인하세요.</p>`;
+        }
+    };
+
+    // DOM에 기록 목록 행 추가
+    const addRecordToDOM = (record) => {
+        const row = document.createElement('div');
+        row.classList.add('record-row');
+        
+        // 3번 항목: 활동 목록을 ,로 구분하여 표시
+        const activities = (record.Activity || '').split(',').map(a => `<span class="activity-tag">${a.trim()}</span>`).join(' ');
+        
+        row.innerHTML = `
+            <div class="record-location">${record.Location || '-'}</div>
+            <div class="record-outdoor">${record.Outdoor || '-'}</div>
+            <div class="record-activity" title="${record.Activity}">${activities}</div>
+            <div class="record-time">${record.Time || '-'}</div>
+            <div class="record-mood">${record.Mood || '-'}</div>
+            <div class="record-satisfaction" title="${record.Important}">${satisfactionEmojis[record.Satisfaction] || ''} ${record.Satisfaction} / ${record.Important}</div>
+        `;
+        recordsContainer.appendChild(row);
+    };
+
+    // 통계 차트 렌더링
+    const renderCharts = () => {
+        // --- 3. 활동 통계 (막대 그래프) ---
+        const activityCounts = recordsCache.flatMap(r => (r.Activity || '').split(',').map(a => a.trim()))
+                                            .filter(a => a)
+                                            .reduce((acc, activity) => {
+                                                acc[activity] = (acc[activity] || 0) + 1;
+                                                return acc;
+                                            }, {});
+
+        const activityLabels = Object.keys(activityCounts);
+        const activityData = Object.values(activityCounts);
+
+        if (activityChart) activityChart.destroy();
+        activityChart = new Chart(activityChartCanvas, {
+            type: 'bar',
+            data: {
+                labels: activityLabels,
+                datasets: [{
+                    label: '휴식 활동 선호도 (총 응답)',
+                    data: activityData,
+                    backgroundColor: '#4CAF50',
+                    borderColor: '#388E3C',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } },
+                plugins: { legend: { display: false } }
+            }
+        });
+        
+        // --- 4. 시간대 통계 (파이 차트) ---
+        const timeCounts = recordsCache.reduce((acc, record) => {
+            acc[record.Time] = (acc[record.Time] || 0) + 1;
+            return acc;
+        }, {});
+        
+        const timeLabels = Object.keys(timeCounts);
+        const timeValues = Object.values(timeCounts);
+
+        if (timeChart) timeChart.destroy();
+        timeChart = new Chart(timeChartCanvas, {
+            type: 'pie',
+            data: {
+                labels: timeLabels,
+                datasets: [{
+                    label: '휴식 시간대 비율',
+                    data: timeValues,
+                    backgroundColor: timeColors,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' } }
+            }
+        });
+    };
+
+    // 폼 제출 이벤트 처리
+    recordForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        submitButton.disabled = true;
+        submitButton.textContent = '저장 중...';
+
+        const formData = new FormData(recordForm);
+        
+        // 3. 활동 항목 (다중 선택) 처리
+        const activities = Array.from(document.querySelectorAll('input[name="activity"]:checked'))
+                                .map(el => el.value)
+                                .join(', '); 
+        const activityEtc = formData.get('activity_etc');
+        const finalActivities = (activities.includes('기타') && activityEtc) 
+                                ? activities.replace('기타', `기타(${activityEtc})`) 
+                                : activities;
+
+        const data = {
+            Location: formData.get('location'),
+            Outdoor: formData.get('outdoor'),
+            Activity: finalActivities, // 수정된 다중 선택 활동
+            Time: formData.get('time'),
+            Mood: formData.get('mood'),
+            Satisfaction: formData.get('satisfaction'),
+            Important: formData.get('important'),
+            Recommend: formData.get('recommend'),
+            Memory: formData.get('memory')
+            // Timestamp는 서버(Apps Script)에서 추가하는 것이 일반적
+        };
+
+        try {
+            // Google Apps Script에 POST 요청
+            const response = await fetch(WEB_APP_URL, {
+                method: 'POST',
+                mode: 'no-cors', 
+                body: JSON.stringify(data)
+            });
+
+            alert('성공적으로 기록되었습니다! 감사합니다. 😊');
+            recordForm.reset();
+            // 재로드를 통해 데이터 업데이트
+            loadRecords(); 
+
+        } catch (error) {
+            console.error('Error submitting record:', error);
+            alert('기록 저장에 실패했습니다. 인터넷 연결 및 스크립트 URL을 확인하세요.');
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = '나의 휴식 공간 기록';
+        }
+    });
+
+    // 엑셀 내보내기 이벤트 처리 (기존 코드 유지)
+    exportButton.addEventListener('click', () => {
+        if (recordsCache.length === 0) {
+            alert('내보낼 데이터가 없습니다.');
+            return;
+        }
+
+        const worksheet = XLSX.utils.json_to_sheet(recordsCache);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "휴식공간기록");
+        XLSX.writeFile(workbook, "my_relaxation_space_records.xlsx");
+    });
+
+    // 초기 데이터 로드
+    loadRecords();
+});
+</script>
+</body>
+</html>
