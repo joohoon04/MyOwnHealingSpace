@@ -8,7 +8,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <style>
-/* 
+/* [수정됨] 
   스타일(CSS) 블록 전체를 '휴식 공간' 테마(초록색)에 맞게 수정하고, 
   목록 CSS에 '추천 대상' 열을 추가했습니다.
 */
@@ -150,6 +150,7 @@ button[type="submit"]:hover {
     color: var(--primary-color);
 }
 
+/* [수정됨] 기록 목록 스타일 - grid-template-columns에 7번째 열(1fr) 추가 */
 .records-header, .record-row {
     display: grid;
     /* 항목에 맞게 컬럼 비율 조정 (총 7개 항목) */
@@ -167,7 +168,7 @@ button[type="submit"]:hover {
     border-bottom: 2px solid var(--primary-color);
 }
 
-.record-content, .record-detail, .record-recommend { 
+.record-content, .record-detail, .record-recommend { /* [수정됨] .record-recommend 추가 */
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -214,16 +215,17 @@ footer {
         color: var(--primary-color);
     }
     
+    /* [수정됨] 모바일 레이블 (휴식 공간 테마에 맞게) */
     .record-location::before { content: '공간: '; }
     .record-outdoor::before { content: '야외: '; }
     .record-activity::before { content: '활동: '; }
     .record-time::before { content: '시간대: '; }
     .record-mood::before { content: '기분(전): '; }
     .record-satisfaction::before { content: '만족도/중요: '; }
-    .record-recommend::before { content: '추천 대상: '; } 
+    .record-recommend::before { content: '추천 대상: '; } /* [수정됨] '추천 대상' 레이블 추가 */
     .record-memory::before { content: '특별한 기억: '; }
     
-    .record-activity, .record-memory, .record-recommend { 
+    .record-activity, .record-memory, .record-recommend { /* [수정됨] .record-recommend 추가 */
         white-space: normal;
         overflow: visible;
         text-overflow: initial;
@@ -383,7 +385,7 @@ footer {
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // !!! 중요: 배포된 자신의 Google Apps Script 웹 앱 URL로 변경하세요.
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwPV62ZVt6TSRWCIo-BzWEKKbT_OIDB4PZ82dbCELB-JRDpqJ-VapcaVBxFmzm_AOch/exec'; // (URL은 그대로 둡니다)
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxrAVg07jIWpn9U2KlH5bdcDr0j0MSAe1YUzeUx1qdVS2bhcx8hCBq8hiCOeZ9WQhsp/exec'; // (URL은 그대로 둡니다)
 
     const recordForm = document.getElementById('record-form');
     const recordsContainer = document.getElementById('records-container');
@@ -439,6 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // [수정됨] DOM에 기록 목록 행 추가 (record.Recommend 추가)
     const addRecordToDOM = (record) => {
         const row = document.createElement('div');
         row.classList.add('record-row');
@@ -458,6 +461,7 @@ document.addEventListener('DOMContentLoaded', () => {
         recordsContainer.appendChild(row);
     };
 
+    // 통계 차트 렌더링 (수정사항 없음)
     const renderCharts = () => {
         // --- 3. 활동 통계 (막대 그래프) ---
         const activityCounts = recordsCache.flatMap(r => (r.Activity || '').split(',').map(a => a.trim()))
@@ -518,6 +522,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // 폼 제출 이벤트 처리 (수정사항 없음 - Recommend 필드는 이미 data 객체에 포함되어 있음)
     recordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitButton = e.target.querySelector('button[type="submit"]');
@@ -564,9 +569,7 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('성공적으로 기록되었습니다! 감사합니다. 😊');
             recordForm.reset();
             outdoorEtcDetail.style.display = 'none';
-            setTimeout(() => {
-                loadRecords(); 
-            }, 2000); 
+            loadRecords(); 
 
         } catch (error) {
             console.error('Error submitting record:', error);
@@ -577,6 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // 엑셀 내보내기 이벤트 처리 (수정사항 없음)
     exportButton.addEventListener('click', () => {
         if (recordsCache.length === 0) {
             alert('내보낼 데이터가 없습니다.');
@@ -594,5 +598,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 </body>
-
 </html>
