@@ -1,15 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
     // !!! 중요: 배포된 자신의 Google Apps Script 웹 앱 URL로 변경하세요.
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwPV62ZVt6TSRWCIo-BzWEKKbT_OIDB4PZ82dbCELB-JRDpqJ-VapcaVBxFmzm_AOch/exec'; // (URL은 그대로 둡니다)
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwPV62ZVt6TSRWCIo-BzWEKKbT_OIDB4PZ82dbCELB-JRDpqJ-VapcaVBxFmzm_AOch/exec'; 
 
     const recordForm = document.getElementById('record-form');
     const recordsContainer = document.getElementById('records-container');
     const exportButton = document.getElementById('export-excel');
     const activityChartCanvas = document.getElementById('activity-chart');
     const timeChartCanvas = document.getElementById('time-chart');
-    
-    // 2번 항목 '기타' 입력 필드 DOM 요소
-    const outdoorEtcDetail = document.getElementById('outdoor-etc-detail');
     
     let recordsCache = []; // 데이터 캐싱
     let activityChart;
@@ -18,19 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // 이모지 매핑
     const satisfactionEmojis = { '매우 좋음': '🤩', '좋음': '😊', '보통': '😐', '별로': '😞' };
     const timeColors = ['#FFA07A', '#6495ED', '#90EE90', '#D3D3D3']; // 30분, 1~2시간, 6시간 이상, 기타
-
-    // 2번 항목 '기타' 라디오 버튼 클릭 이벤트 처리
-    const outdoorRadios = document.querySelectorAll('input[name="outdoor"]');
-    outdoorRadios.forEach(radio => {
-        radio.addEventListener('change', () => {
-            if (document.getElementById('outdoor-etc').checked) {
-                outdoorEtcDetail.style.display = 'block';
-            } else {
-                outdoorEtcDetail.style.display = 'none';
-                outdoorEtcDetail.value = ''; 
-            }
-        });
-    });
 
     // 데이터 로드 및 화면 업데이트
     const loadRecords = async () => {
@@ -45,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             recordsContainer.innerHTML = ''; 
+            // 최신순으로 정렬 (Timestamp 필드가 있다고 가정)
             recordsCache.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
             
             recordsCache.forEach(addRecordToDOM);
@@ -56,13 +41,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // DOM에 기록 목록 행 추가
     const addRecordToDOM = (record) => {
         const row = document.createElement('div');
         row.classList.add('record-row');
         
+        // 3번 항목: 활동 목록을 ,로 구분하여 표시
         const activities = (record.Activity || '').split(',').map(a => `<span class="activity-tag">${a.trim()}</span>`).join(' ');
         
-        // '추천 대상'을 표시하는 <div> 추가
         row.innerHTML = `
             <div class="record-location">${record.Location || '-'}</div>
             <div class="record-outdoor">${record.Outdoor || '-'}</div>
@@ -70,11 +56,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="record-time">${record.Time || '-'}</div>
             <div class="record-mood">${record.Mood || '-'}</div>
             <div class="record-satisfaction" title="${record.Important}">${satisfactionEmojis[record.Satisfaction] || ''} ${record.Satisfaction} / ${record.Important}</div>
-            <div class="record-recommend" title="${record.Recommend}">${record.Recommend || '-'}</div>
         `;
         recordsContainer.appendChild(row);
     };
 
+    // 통계 차트 렌더링
     const renderCharts = () => {
         // --- 3. 활동 통계 (막대 그래프) ---
         const activityCounts = recordsCache.flatMap(r => (r.Activity || '').split(',').map(a => a.trim()))
@@ -135,6 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // 폼 제출 이벤트 처리
     recordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitButton = e.target.querySelector('button[type="submit"]');
@@ -152,26 +139,21 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ? activities.replace('기타', `기타(${activityEtc})`) 
                                 : activities;
 
-        // 2. 야외 방문지 '기타' 항목 처리
-        const outdoorValue = formData.get('outdoor');
-        const outdoorEtc = formData.get('outdoor_etc'); 
-        const finalOutdoor = (outdoorValue === '기타' && outdoorEtc) 
-                                ? `기타(${outdoorEtc})` 
-                                : outdoorValue;
-
         const data = {
             Location: formData.get('location'),
-            Outdoor: finalOutdoor, 
-            Activity: finalActivities, 
+            Outdoor: formData.get('outdoor'),
+            Activity: finalActivities, // 수정된 다중 선택 활동
             Time: formData.get('time'),
             Mood: formData.get('mood'),
             Satisfaction: formData.get('satisfaction'),
             Important: formData.get('important'),
-            Recommend: formData.get('recommend'), // 이미 포함되어 있음
+            Recommend: formData.get('recommend'),
             Memory: formData.get('memory')
+            // Timestamp는 서버(Apps Script)에서 추가하는 것이 일반적
         };
 
         try {
+            // Google Apps Script에 POST 요청
             const response = await fetch(WEB_APP_URL, {
                 method: 'POST',
                 mode: 'no-cors', 
@@ -180,7 +162,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             alert('성공적으로 기록되었습니다! 감사합니다. 😊');
             recordForm.reset();
-            outdoorEtcDetail.style.display = 'none';
+            // 재로드를 통해 데이터 업데이트
             loadRecords(); 
 
         } catch (error) {
@@ -192,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    // 엑셀 내보내기 이벤트 처리 (기존 코드 유지)
     exportButton.addEventListener('click', () => {
         if (recordsCache.length === 0) {
             alert('내보낼 데이터가 없습니다.');
