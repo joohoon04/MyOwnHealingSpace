@@ -8,6 +8,10 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <style>
+/* 
+  스타일(CSS) 블록 전체를 '휴식 공간' 테마(초록색)에 맞게 수정하고, 
+  목록 CSS에 '추천 대상' 열을 추가했습니다.
+*/
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
 
 :root {
@@ -146,11 +150,10 @@ button[type="submit"]:hover {
     color: var(--primary-color);
 }
 
-/* 기록 목록 스타일은 기존 코드를 재활용하며 컬럼만 수정 */
 .records-header, .record-row {
     display: grid;
-    /* 항목에 맞게 컬럼 비율 조정 */
-    grid-template-columns: 120px 100px 1fr 100px 80px 150px; 
+    /* 항목에 맞게 컬럼 비율 조정 (총 7개 항목) */
+    grid-template-columns: 120px 100px 1fr 100px 80px 150px 1fr; 
     gap: 10px;
     padding: 15px 10px;
     align-items: center;
@@ -164,7 +167,7 @@ button[type="submit"]:hover {
     border-bottom: 2px solid var(--primary-color);
 }
 
-.record-content, .record-detail {
+.record-content, .record-detail, .record-recommend { 
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -211,18 +214,16 @@ footer {
         color: var(--primary-color);
     }
     
-    /* 모바일 레이블 수정 */
     .record-location::before { content: '공간: '; }
     .record-outdoor::before { content: '야외: '; }
     .record-activity::before { content: '활동: '; }
     .record-time::before { content: '시간대: '; }
     .record-mood::before { content: '기분(전): '; }
-    .record-satisfaction::before { content: '만족도: '; }
-    .record-important::before { content: '중요 요소: '; }
-    .record-recommend::before { content: '추천 대상: '; }
+    .record-satisfaction::before { content: '만족도/중요: '; }
+    .record-recommend::before { content: '추천 대상: '; } 
     .record-memory::before { content: '특별한 기억: '; }
     
-    .record-activity, .record-memory {
+    .record-activity, .record-memory, .record-recommend { 
         white-space: normal;
         overflow: visible;
         text-overflow: initial;
@@ -262,6 +263,7 @@ footer {
                         <input type="radio" id="outdoor-etc" name="outdoor" value="기타">
                         <label for="outdoor-etc">✨ 기타</label>
                     </div>
+                    <textarea id="outdoor-etc-detail" name="outdoor_etc" rows="1" placeholder="기타 선택 시 구체적인 장소를 적어주세요. (선택 사항)" style="display: none; margin-top: 10px;"></textarea>
                 </div>
                 
                 <div class="form-group">
@@ -335,6 +337,7 @@ footer {
                     <textarea id="memory" name="memory" rows="4" placeholder="자유롭게 기록"></textarea>
                 </div>
 
+
                 <button type="submit">나의 휴식 공간 기록</button>
             </form>
 
@@ -365,6 +368,7 @@ footer {
                         <div>시간대</div>
                         <div>기분(전)</div>
                         <div>만족도 / 중요 요소</div>
+                        <div>추천 대상</div>
                     </div>
                     <div id="records-container">
                         </div>
@@ -379,13 +383,16 @@ footer {
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // !!! 중요: 배포된 자신의 Google Apps Script 웹 앱 URL로 변경하세요.
-    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbxrAVg07jIWpn9U2KlH5bdcDr0j0MSAe1YUzeUx1qdVS2bhcx8hCBq8hiCOeZ9WQhsp/exec'; 
+    const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwPV62ZVt6TSRWCIo-BzWEKKbT_OIDB4PZ82dbCELB-JRDpqJ-VapcaVBxFmzm_AOch/exec'; // (URL은 그대로 둡니다)
 
     const recordForm = document.getElementById('record-form');
     const recordsContainer = document.getElementById('records-container');
     const exportButton = document.getElementById('export-excel');
     const activityChartCanvas = document.getElementById('activity-chart');
     const timeChartCanvas = document.getElementById('time-chart');
+    
+    // 2번 항목 '기타' 입력 필드 DOM 요소
+    const outdoorEtcDetail = document.getElementById('outdoor-etc-detail');
     
     let recordsCache = []; // 데이터 캐싱
     let activityChart;
@@ -394,6 +401,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // 이모지 매핑
     const satisfactionEmojis = { '매우 좋음': '🤩', '좋음': '😊', '보통': '😐', '별로': '😞' };
     const timeColors = ['#FFA07A', '#6495ED', '#90EE90', '#D3D3D3']; // 30분, 1~2시간, 6시간 이상, 기타
+
+    // 2번 항목 '기타' 라디오 버튼 클릭 이벤트 처리
+    const outdoorRadios = document.querySelectorAll('input[name="outdoor"]');
+    outdoorRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (document.getElementById('outdoor-etc').checked) {
+                outdoorEtcDetail.style.display = 'block';
+            } else {
+                outdoorEtcDetail.style.display = 'none';
+                outdoorEtcDetail.value = ''; 
+            }
+        });
+    });
 
     // 데이터 로드 및 화면 업데이트
     const loadRecords = async () => {
@@ -408,7 +428,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             recordsContainer.innerHTML = ''; 
-            // 최신순으로 정렬 (Timestamp 필드가 있다고 가정)
             recordsCache.sort((a, b) => new Date(b.Timestamp) - new Date(a.Timestamp));
             
             recordsCache.forEach(addRecordToDOM);
@@ -420,14 +439,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // DOM에 기록 목록 행 추가
     const addRecordToDOM = (record) => {
         const row = document.createElement('div');
         row.classList.add('record-row');
         
-        // 3번 항목: 활동 목록을 ,로 구분하여 표시
         const activities = (record.Activity || '').split(',').map(a => `<span class="activity-tag">${a.trim()}</span>`).join(' ');
         
+        // '추천 대상'을 표시하는 <div> 추가
         row.innerHTML = `
             <div class="record-location">${record.Location || '-'}</div>
             <div class="record-outdoor">${record.Outdoor || '-'}</div>
@@ -435,11 +453,11 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="record-time">${record.Time || '-'}</div>
             <div class="record-mood">${record.Mood || '-'}</div>
             <div class="record-satisfaction" title="${record.Important}">${satisfactionEmojis[record.Satisfaction] || ''} ${record.Satisfaction} / ${record.Important}</div>
+            <div class="record-recommend" title="${record.Recommend}">${record.Recommend || '-'}</div>
         `;
         recordsContainer.appendChild(row);
     };
 
-    // 통계 차트 렌더링
     const renderCharts = () => {
         // --- 3. 활동 통계 (막대 그래프) ---
         const activityCounts = recordsCache.flatMap(r => (r.Activity || '').split(',').map(a => a.trim()))
@@ -500,7 +518,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // 폼 제출 이벤트 처리
     recordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitButton = e.target.querySelector('button[type="submit"]');
@@ -518,21 +535,26 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ? activities.replace('기타', `기타(${activityEtc})`) 
                                 : activities;
 
+        // 2. 야외 방문지 '기타' 항목 처리
+        const outdoorValue = formData.get('outdoor');
+        const outdoorEtc = formData.get('outdoor_etc'); 
+        const finalOutdoor = (outdoorValue === '기타' && outdoorEtc) 
+                                ? `기타(${outdoorEtc})` 
+                                : outdoorValue;
+
         const data = {
             Location: formData.get('location'),
-            Outdoor: formData.get('outdoor'),
-            Activity: finalActivities, // 수정된 다중 선택 활동
+            Outdoor: finalOutdoor, 
+            Activity: finalActivities, 
             Time: formData.get('time'),
             Mood: formData.get('mood'),
             Satisfaction: formData.get('satisfaction'),
             Important: formData.get('important'),
-            Recommend: formData.get('recommend'),
+            Recommend: formData.get('recommend'), // 이미 포함되어 있음
             Memory: formData.get('memory')
-            // Timestamp는 서버(Apps Script)에서 추가하는 것이 일반적
         };
 
         try {
-            // Google Apps Script에 POST 요청
             const response = await fetch(WEB_APP_URL, {
                 method: 'POST',
                 mode: 'no-cors', 
@@ -541,7 +563,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             alert('성공적으로 기록되었습니다! 감사합니다. 😊');
             recordForm.reset();
-            // 재로드를 통해 데이터 업데이트
+            outdoorEtcDetail.style.display = 'none';
             loadRecords(); 
 
         } catch (error) {
@@ -553,7 +575,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 엑셀 내보내기 이벤트 처리 (기존 코드 유지)
     exportButton.addEventListener('click', () => {
         if (recordsCache.length === 0) {
             alert('내보낼 데이터가 없습니다.');
@@ -571,7 +592,4 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 </body>
-
 </html>
-
-
