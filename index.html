@@ -8,16 +8,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
 <style>
-/* [수정됨] 
-  스타일(CSS) 블록 전체를 '휴식 공간' 테마(초록색)에 맞게 수정하고, 
-  목록 CSS에 '추천 대상' 열을 추가했습니다.
-*/
+
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap');
 
 :root {
-    --primary-color: #4CAF50; /* Green - 휴식/힐링 테마 */
-    --secondary-color: #81C784; /* Light Green */
-    --background-color: #F1F8E9; /* Very Light Green */
+    --primary-color: #4CAF50; 
+    --secondary-color: #81C784; 
+    --background-color: #F1F8E9; 
     --card-background: #FFFFFF;
     --text-color: #424242;
     --border-color: #E0E0E0;
@@ -149,11 +146,9 @@ button[type="submit"]:hover {
     margin-bottom: 15px;
     color: var(--primary-color);
 }
-
-/* [수정됨] 기록 목록 스타일 - grid-template-columns에 7번째 열(1fr) 추가 */
+    
 .records-header, .record-row {
     display: grid;
-    /* 항목에 맞게 컬럼 비율 조정 (총 7개 항목) */
     grid-template-columns: 120px 100px 1fr 100px 80px 150px 1fr; 
     gap: 10px;
     padding: 15px 10px;
@@ -168,7 +163,7 @@ button[type="submit"]:hover {
     border-bottom: 2px solid var(--primary-color);
 }
 
-.record-content, .record-detail, .record-recommend { /* [수정됨] .record-recommend 추가 */
+.record-content, .record-detail, .record-recommend {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -215,17 +210,16 @@ footer {
         color: var(--primary-color);
     }
     
-    /* [수정됨] 모바일 레이블 (휴식 공간 테마에 맞게) */
     .record-location::before { content: '공간: '; }
     .record-outdoor::before { content: '야외: '; }
     .record-activity::before { content: '활동: '; }
     .record-time::before { content: '시간대: '; }
     .record-mood::before { content: '기분(전): '; }
     .record-satisfaction::before { content: '만족도/중요: '; }
-    .record-recommend::before { content: '추천 대상: '; } /* [수정됨] '추천 대상' 레이블 추가 */
+    .record-recommend::before { content: '추천 대상: '; } 
     .record-memory::before { content: '특별한 기억: '; }
     
-    .record-activity, .record-memory, .record-recommend { /* [수정됨] .record-recommend 추가 */
+    .record-activity, .record-memory, .record-recommend { 
         white-space: normal;
         overflow: visible;
         text-overflow: initial;
@@ -393,18 +387,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const activityChartCanvas = document.getElementById('activity-chart');
     const timeChartCanvas = document.getElementById('time-chart');
     
-    // 2번 항목 '기타' 입력 필드 DOM 요소
     const outdoorEtcDetail = document.getElementById('outdoor-etc-detail');
     
-    let recordsCache = []; // 데이터 캐싱
+    let recordsCache = []; 
     let activityChart;
     let timeChart;
     
-    // 이모지 매핑
     const satisfactionEmojis = { '매우 좋음': '🤩', '좋음': '😊', '보통': '😐', '별로': '😞' };
-    const timeColors = ['#FFA07A', '#6495ED', '#90EE90', '#D3D3D3']; // 30분, 1~2시간, 6시간 이상, 기타
-
-    // 2번 항목 '기타' 라디오 버튼 클릭 이벤트 처리
+    const timeColors = ['#FFA07A', '#6495ED', '#90EE90', '#D3D3D3']; 
+    
     const outdoorRadios = document.querySelectorAll('input[name="outdoor"]');
     outdoorRadios.forEach(radio => {
         radio.addEventListener('change', () => {
@@ -441,14 +432,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // [수정됨] DOM에 기록 목록 행 추가 (record.Recommend 추가)
     const addRecordToDOM = (record) => {
         const row = document.createElement('div');
         row.classList.add('record-row');
         
         const activities = (record.Activity || '').split(',').map(a => `<span class="activity-tag">${a.trim()}</span>`).join(' ');
         
-        // '추천 대상'을 표시하는 <div> 추가
         row.innerHTML = `
             <div class="record-location">${record.Location || '-'}</div>
             <div class="record-outdoor">${record.Outdoor || '-'}</div>
@@ -461,9 +450,7 @@ document.addEventListener('DOMContentLoaded', () => {
         recordsContainer.appendChild(row);
     };
 
-    // 통계 차트 렌더링 (수정사항 없음)
     const renderCharts = () => {
-        // --- 3. 활동 통계 (막대 그래프) ---
         const activityCounts = recordsCache.flatMap(r => (r.Activity || '').split(',').map(a => a.trim()))
                                             .filter(a => a)
                                             .reduce((acc, activity) => {
@@ -493,8 +480,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 plugins: { legend: { display: false } }
             }
         });
-        
-        // --- 4. 시간대 통계 (파이 차트) ---
         const timeCounts = recordsCache.reduce((acc, record) => {
             acc[record.Time] = (acc[record.Time] || 0) + 1;
             return acc;
@@ -522,7 +507,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // 폼 제출 이벤트 처리 (수정사항 없음 - Recommend 필드는 이미 data 객체에 포함되어 있음)
     recordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitButton = e.target.querySelector('button[type="submit"]');
@@ -531,7 +515,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const formData = new FormData(recordForm);
         
-        // 3. 활동 항목 (다중 선택) 처리
         const activities = Array.from(document.querySelectorAll('input[name="activity"]:checked'))
                                 .map(el => el.value)
                                 .join(', '); 
@@ -540,7 +523,6 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ? activities.replace('기타', `기타(${activityEtc})`) 
                                 : activities;
 
-        // 2. 야외 방문지 '기타' 항목 처리
         const outdoorValue = formData.get('outdoor');
         const outdoorEtc = formData.get('outdoor_etc'); 
         const finalOutdoor = (outdoorValue === '기타' && outdoorEtc) 
@@ -555,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
             Mood: formData.get('mood'),
             Satisfaction: formData.get('satisfaction'),
             Important: formData.get('important'),
-            Recommend: formData.get('recommend'), // 이미 포함되어 있음
+            Recommend: formData.get('recommend'), 
             Memory: formData.get('memory')
         };
 
@@ -580,7 +562,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 엑셀 내보내기 이벤트 처리 (수정사항 없음)
     exportButton.addEventListener('click', () => {
         if (recordsCache.length === 0) {
             alert('내보낼 데이터가 없습니다.');
@@ -598,4 +579,5 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 </body>
+
 </html>
